@@ -1,3 +1,7 @@
+"""
+Copyright (c) Billal Fauzan 2021 <billal.xcode]@gmail.com>
+"""
+
 from errors import ObjectError
 
 # Format images
