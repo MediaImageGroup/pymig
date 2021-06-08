@@ -7,8 +7,11 @@ import json
 import time
 import threading
 from parser.JPGParser import JPGParser
+from crypto.ZLib import compress
+from errors import (DataError, FileError)
 from utils import (format_columns, format_openImage, format_rows,
-                    generate_tabs, format_version, format_urls)
+                    generate_tabs, format_version, format_urls,
+                    check_byte, check_string)
 
 class Encoder:
     def __init__(self, data):
@@ -18,12 +21,17 @@ class Encoder:
         self.columns_data = ""
 
     def reset(self):
-        # Reset memory in variable
+        " Reset memory in variable "
         self.outputs = ""
         self.rows_data = ""
         self.columns_data = ""
 
     def rgbdata(self, value):
+        """
+        Convert RGB to custom data
+        
+        @value      RGB value
+        """
         outs = ""
         length = len(value)
         for x in range(0, int(length)):
@@ -35,6 +43,11 @@ class Encoder:
         return outs
 
     def calculateTime(self, ctime):
+        """
+        Process converting to new format
+
+        @ctime      Current Time
+        """
         totalTime = str(time.time() - ctime)
         spltsTime = totalTime.split(".")
         if len(spltsTime[0]) == 1:
@@ -49,9 +62,9 @@ class Encoder:
 
     def convert(self):
         ctime = time.time()
-        width = self.data["width"]
-        height = self.data["height"]
-        data = self.data["data"]
+        width = self.data["width"] # image with
+        height = self.data["height"] # image height
+        data = self.data["data"] # data pixel
         row_index = 0
         rows_data = ""
         for rows in data:
@@ -67,24 +80,44 @@ class Encoder:
         
         return self.outputs
 
-    def save(self, filename, data=None):
-        if data is None:
+    def save(self, filename, data=None, encrypt=True):
+        """
+        @filename   output file (recomended)
+        @data       data converted
+        @encrypt    encrypt data to zlib (recomended to make small filesize)
+        """
+        mode = "w" # default mode "w", "wb" to write byte
+        if encrypt:
+            if data is None:
+                data = self.convert() # if data is null then automate get data
+            data = compress(data.encode())
+
+        if data is None or len(data) == 0 or len(str(data)) == 0:
             data = self.convert()
-        with open(filename, "w") as f:
+            if data == "":
+                raise DataError("Data is null")
+        if check_byte(data):
+            mode = "wb" # change mode to byte mode
+        elif check_string(data):
+            mode = "w" # change mode to string mode
+        else:
+            raise DataError("Invalid data")
+        
+        with open(filename, mode=mode) as f:
             f.write(data)
             f.close()
 
 class Main:
     def __init__(self, argv):
         self.filename = argv[1]
-        self.jpgparser = JPGParser()
+        self.jpgparser = JPGParser() 
 
     def read(self):
-        self.rgbpixels = self.jpgparser.parseRGB(self.filename)
+        self.rgbpixels = self.jpgparser.parseRGB(self.filename) # Parser RGB from JPG per pixels
         return Encoder(self.rgbpixels)
 
 if __name__ == "__main__":
     main = Main(sys.argv)
     reader = main.read()
     data = reader.convert()
-    reader.save("imgs/results.mig", data)
+    reader.save("imgs/results.mig", data, encrypt=True)
