@@ -1,3 +1,7 @@
+"""
+Copyright (c) Billal Fauzan 2021 <billal.xcode]@gmail.com>
+"""
+
 import random
 import zlib
 from utils import check_byte, check_string
@@ -23,7 +27,7 @@ def generate_keys(length, alp=True, nums=True):
     return OUTPUTS
 
 def compress(data_original):
-    default = 4
+    default = random.randint(4, 6)
     keys = generate_keys(default)
     keys = "|" + keys
     keys = keys.encode()
